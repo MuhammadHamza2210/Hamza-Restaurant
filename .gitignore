@@ -1,0 +1,32 @@
+# ===== Secrets — NEVER commit =====
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# ===== Node =====
+node_modules/
+dist/
+dist-ssr/
+*.local
+.cache/
+
+# ===== Local databases (recreated by the app) =====
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# ===== OS / Editor =====
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# ===== Logs =====
+*.log
+npm-debug.log*

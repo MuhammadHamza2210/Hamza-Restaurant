@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zaiqa — Admin Console</title>
+    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <!-- LOGIN GATE -->
+    <div id="loginGate" class="login-gate">
+        <div class="login-card">
+            <div class="login-brand"><i class="fas fa-utensils"></i> Zaiqa <span>Admin</span></div>
+            <p class="login-sub">Sign in to the management console</p>
+            <form id="adminLoginForm">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="adminEmail" value="admin@zaiqa.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="adminPassword" value="" placeholder="admin123" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+                <p class="login-hint"><i class="fas fa-circle-info"></i> Demo admin: <strong>admin@zaiqa.com</strong> / <strong>admin123</strong></p>
+                <p id="adminLoginError" class="login-error"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADMIN APP -->
+    <div id="adminApp" class="admin-app" style="display:none;">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand"><i class="fas fa-utensils"></i> <span>Zaiqa</span></div>
+            <nav class="sidebar-nav">
+                <a class="nav-item active" data-view="dashboard"><i class="fas fa-chart-line"></i> Dashboard</a>
+                <a class="nav-item" data-view="orders"><i class="fas fa-receipt"></i> Orders <span class="nav-badge" id="ordersBadge"></span></a>
+                <a class="nav-item" data-view="products"><i class="fas fa-burger"></i> Products</a>
+                <a class="nav-item" data-view="categories"><i class="fas fa-tags"></i> Categories</a>
+                <a class="nav-item" data-view="reservations"><i class="fas fa-calendar-check"></i> Reservations <span class="nav-badge" id="resBadge"></span></a>
+                <a class="nav-item" data-view="customers"><i class="fas fa-users"></i> Customers</a>
+                <a class="nav-item" data-view="reviews"><i class="fas fa-star"></i> Reviews</a>
+            </nav>
+            <a href="index.html" class="sidebar-foot"><i class="fas fa-arrow-up-right-from-square"></i> View live site</a>
+        </aside>
+
+        <!-- Main -->
+        <div class="main">
+            <header class="topbar">
+                <button class="icon-btn menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
+                <h1 id="viewTitle">Dashboard</h1>
+                <div class="topbar-right">
+                    <button class="icon-btn theme-btn" id="themeBtn" title="Theme"><i class="fas fa-moon"></i></button>
+                    <div class="bell" id="bell">
+                        <i class="fas fa-bell"></i>
+                        <span class="bell-count" id="bellCount">0</span>
+                        <div class="bell-panel" id="bellPanel">
+                            <div class="bell-head">Notifications <button id="markRead">Mark all read</button></div>
+                            <div class="bell-list" id="bellList"></div>
+                        </div>
+                    </div>
+                    <div class="admin-chip"><i class="fas fa-user-shield"></i> <span id="adminName">Admin</span></div>
+                    <button class="btn btn-ghost" id="logoutBtn"><i class="fas fa-right-from-bracket"></i></button>
+                </div>
+            </header>
+
+            <main class="content" id="content">
+                <!-- DASHBOARD -->
+                <section class="view active" id="view-dashboard">
+                    <div class="kpi-grid" id="kpiGrid"></div>
+                    <div class="chart-grid">
+                        <div class="card chart-card span-2">
+                            <div class="card-head"><h3><i class="fas fa-arrow-trend-up"></i> Revenue (last 30 days)</h3></div>
+                            <canvas id="chartRevenue"></canvas>
+                        </div>
+                        <div class="card chart-card">
+                            <div class="card-head"><h3><i class="fas fa-clock"></i> Peak Business Hours</h3></div>
+                            <canvas id="chartHours"></canvas>
+                        </div>
+                        <div class="card chart-card">
+                            <div class="card-head"><h3><i class="fas fa-fire"></i> Most Ordered Dishes</h3></div>
+                            <canvas id="chartDishes"></canvas>
+                        </div>
+                        <div class="card chart-card">
+                            <div class="card-head"><h3><i class="fas fa-chart-pie"></i> Revenue by Category</h3></div>
+                            <canvas id="chartCategory"></canvas>
+                        </div>
+                        <div class="card chart-card">
+                            <div class="card-head"><h3><i class="fas fa-users-line"></i> Customer Growth</h3></div>
+                            <canvas id="chartGrowth"></canvas>
+                        </div>
+                        <div class="card chart-card">
+                            <div class="card-head"><h3><i class="fas fa-calendar-week"></i> Orders by Weekday</h3></div>
+                            <canvas id="chartWeekday"></canvas>
+                        </div>
+                        <div class="card chart-card">
+                            <div class="card-head"><h3><i class="fas fa-list-check"></i> Order Status</h3></div>
+                            <canvas id="chartStatus"></canvas>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-head"><h3><i class="fas fa-trophy"></i> Best Sellers by Revenue</h3></div>
+                        <div id="bestSellers" class="bestseller-list"></div>
+                    </div>
+                </section>
+
+                <!-- ORDERS -->
+                <section class="view" id="view-orders">
+                    <div class="toolbar">
+                        <div class="filter-pills" id="orderFilters">
+                            <button class="pill active" data-status="all">All</button>
+                            <button class="pill" data-status="pending">Pending</button>
+                            <button class="pill" data-status="preparing">Preparing</button>
+                            <button class="pill" data-status="ready">Ready</button>
+                            <button class="pill" data-status="delivered">Delivered</button>
+                            <button class="pill" data-status="cancelled">Cancelled</button>
+                        </div>
+                    </div>
+                    <div class="card"><div class="table-wrap"><table id="ordersTable"></table></div></div>
+                </section>
+
+                <!-- PRODUCTS -->
+                <section class="view" id="view-products">
+                    <div class="toolbar">
+                        <input type="text" id="productSearch" class="search" placeholder="Search products...">
+                        <button class="btn btn-primary" id="addProductBtn"><i class="fas fa-plus"></i> Add Product</button>
+                    </div>
+                    <div class="product-grid" id="productGrid"></div>
+                </section>
+
+                <!-- CATEGORIES -->
+                <section class="view" id="view-categories">
+                    <div class="toolbar">
+                        <button class="btn btn-primary" id="addCategoryBtn"><i class="fas fa-plus"></i> Add Category</button>
+                    </div>
+                    <div class="card"><div class="table-wrap"><table id="categoriesTable"></table></div></div>
+                </section>
+
+                <!-- RESERVATIONS -->
+                <section class="view" id="view-reservations">
+                    <div class="card"><div class="table-wrap"><table id="reservationsTable"></table></div></div>
+                </section>
+
+                <!-- CUSTOMERS -->
+                <section class="view" id="view-customers">
+                    <div class="toolbar"><input type="text" id="customerSearch" class="search" placeholder="Search customers..."></div>
+                    <div class="card"><div class="table-wrap"><table id="customersTable"></table></div></div>
+                </section>
+
+                <!-- REVIEWS -->
+                <section class="view" id="view-reviews">
+                    <div class="review-admin-grid" id="reviewsAdmin"></div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- Product modal -->
+    <div class="modal" id="productModal">
+        <div class="modal-card">
+            <div class="modal-head"><h3 id="productModalTitle">Add Product</h3><button class="close" data-close>&times;</button></div>
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="form-group"><label>Name</label><input id="pName"></div>
+                    <div class="form-group"><label>Price (Rs.)</label><input id="pPrice" type="number"></div>
+                </div>
+                <div class="form-group"><label>Description</label><textarea id="pDesc"></textarea></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Category</label><select id="pCategory"></select></div>
+                    <div class="form-group"><label>Base rating</label><input id="pRating" type="number" step="0.1" min="1" max="5" value="4.5"></div>
+                </div>
+                <div class="form-group">
+                    <label>Image</label>
+                    <div class="image-picker">
+                        <img id="pImagePreview" src="images/placeholder-food.svg" alt="">
+                        <div>
+                            <input id="pImage" placeholder="images/your-dish.jpg">
+                            <label class="upload-btn"><i class="fas fa-upload"></i> Upload<input type="file" id="pImageFile" accept="image/*" hidden></label>
+                        </div>
+                    </div>
+                </div>
+                <div class="toggles">
+                    <label class="chk"><input type="checkbox" id="pVeg"> Vegetarian</label>
+                    <label class="chk"><input type="checkbox" id="pSpicy"> Spicy</label>
+                    <label class="chk"><input type="checkbox" id="pRec"> Recommended</label>
+                    <label class="chk"><input type="checkbox" id="pAvail" checked> Available</label>
+                </div>
+            </div>
+            <div class="modal-foot">
+                <button class="btn btn-ghost" data-close>Cancel</button>
+                <button class="btn btn-primary" id="saveProductBtn">Save Product</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category modal -->
+    <div class="modal" id="categoryModal">
+        <div class="modal-card">
+            <div class="modal-head"><h3 id="categoryModalTitle">Add Category</h3><button class="close" data-close>&times;</button></div>
+            <div class="modal-body">
+                <div class="form-group"><label>Label</label><input id="cLabel" placeholder="e.g. Desserts"></div>
+                <div class="form-group"><label>Slug</label><input id="cSlug" placeholder="e.g. desserts"></div>
+                <div class="form-group"><label>Icon (Font Awesome)</label><input id="cIcon" placeholder="fa-ice-cream"></div>
+                <div class="form-group"><label>Sort order</label><input id="cSort" type="number" value="0"></div>
+            </div>
+            <div class="modal-foot">
+                <button class="btn btn-ghost" data-close>Cancel</button>
+                <button class="btn btn-primary" id="saveCategoryBtn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastWrap" class="toast-wrap"></div>
+    <script src="admin.js"></script>
+</body>
+</html>

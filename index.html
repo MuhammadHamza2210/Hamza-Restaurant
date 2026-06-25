@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zaiqa — Fine Kitchen | Authentic Flavours, Delivered</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fas fa-utensils"></i>
+                <span>Zaiqa</span>
+            </div>
+            <div class="nav-menu" id="navMenu">
+                <a href="#home" class="nav-link active">Home</a>
+                <a href="#menu" class="nav-link">Menu</a>
+                <a href="#reserve" class="nav-link">Reserve</a>
+                <a href="#cart" class="nav-link">Cart</a>
+                <a href="#orders" class="nav-link">My Orders</a>
+                <a href="admin.html" class="nav-link admin-link" id="adminLink" style="display:none;"><i class="fas fa-gauge-high"></i> Admin</a>
+            </div>
+            <div class="nav-actions">
+                <button class="icon-btn theme-toggle" id="themeToggle" title="Toggle theme" aria-label="Toggle dark mode">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <div class="icon-btn bell-icon" id="bellIcon" title="Notifications" style="display:none;">
+                    <i class="fas fa-bell"></i>
+                    <span class="cart-count bell-count" id="bellCount">0</span>
+                    <div class="bell-dropdown" id="bellDropdown">
+                        <div class="bell-dropdown-head">Notifications</div>
+                        <div class="bell-dropdown-list" id="bellDropdownList"></div>
+                    </div>
+                </div>
+                <div class="icon-btn fav-icon" id="favIcon" title="Favorites">
+                    <i class="fas fa-heart"></i>
+                    <span class="cart-count fav-count" id="favCount">0</span>
+                </div>
+                <div class="icon-btn cart-icon" id="cartIcon" title="Cart">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count" id="cartCount">0</span>
+                </div>
+                <div class="user-section" id="userSection">
+                    <button class="btn-login" id="loginBtn">Login</button>
+                </div>
+                <button class="hamburger" id="hamburger" aria-label="Menu">
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="section active">
+        <div class="hero">
+            <div class="hero-content">
+                <h1 class="hero-title">Welcome to Zaiqa</h1>
+                <p class="hero-subtitle">Authentic flavours, delivered. From traditional Pakistani classics to international favourites — crafted fresh, served with love.</p>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <h3>5000+</h3>
+                        <p>Happy Customers</p>
+                    </div>
+                    <div class="stat">
+                        <h3>25+</h3>
+                        <p>Delicious Dishes</p>
+                    </div>
+                    <div class="stat">
+                        <h3>98%</h3>
+                        <p>Customer Satisfaction</p>
+                    </div>
+                </div>
+                <div class="hero-cta">
+                    <button class="btn-primary btn-large" id="exploreMenu">
+                        <i class="fas fa-utensils"></i>
+                        Explore Our Menu
+                    </button>
+                    <button class="btn-secondary btn-large" id="reserveCta">
+                        <i class="fas fa-calendar-check"></i>
+                        Reserve a Table
+                    </button>
+                </div>
+            </div>
+            <div class="hero-image">
+                <img src="images/chicken-biryani.webp" alt="Delicious Food" class="hero-img"
+                     onerror="this.src='images/placeholder-food.svg'">
+                <div class="floating-card">
+                    <i class="fas fa-star"></i>
+                    <span>Rated 4.8/5 by Food Critics</span>
+                </div>
+                <div class="floating-card floating-card-2">
+                    <i class="fas fa-truck"></i>
+                    <span>Free delivery over Rs. 2000</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Menu Section -->
+    <section id="menu" class="section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Our Premium Menu</h2>
+                <p>Carefully crafted dishes with authentic flavors and premium ingredients</p>
+            </div>
+            
+            <!-- Category Filters -->
+            <div class="category-filters">
+                <button class="category-btn active" data-category="all">All Items</button>
+                <button class="category-btn" data-category="main-course">Main Course</button>
+                <button class="category-btn" data-category="bbq-grill">BBQ & Grill</button>
+                <button class="category-btn" data-category="fast-food">Fast Food</button>
+                <button class="category-btn" data-category="sweets">Sweets</button>
+                <button class="category-btn" data-category="drinks">Drinks</button>
+            </div>
+
+            <!-- Search + Tools -->
+            <div class="menu-toolbar">
+                <div class="search-container">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Search your favorite dishes...">
+                </div>
+                <div class="menu-tools">
+                    <label class="veg-toggle">
+                        <input type="checkbox" id="vegToggle">
+                        <span class="veg-slider"></span>
+                        <span class="veg-label"><i class="fas fa-leaf"></i> Veg only</span>
+                    </label>
+                    <div class="select-wrap">
+                        <i class="fas fa-sort"></i>
+                        <select id="sortSelect">
+                            <option value="recommended">Recommended</option>
+                            <option value="price-asc">Price: Low to High</option>
+                            <option value="price-desc">Price: High to Low</option>
+                            <option value="rating">Top Rated</option>
+                            <option value="name">Name (A–Z)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="result-count" id="resultCount"></div>
+
+            <!-- Menu Grid -->
+            <div class="menu-grid" id="menuGrid">
+                <!-- Menu items will be loaded here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Reservation Section -->
+    <section id="reserve" class="section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Reserve Your Table</h2>
+                <p>Book a table in seconds and skip the wait. We'll confirm your reservation shortly.</p>
+            </div>
+            <div class="reserve-wrap">
+                <div class="reserve-info glass">
+                    <h3><i class="fas fa-utensils"></i> Dine with Zaiqa</h3>
+                    <p>Enjoy an unforgettable dining experience in a warm, elegant setting.</p>
+                    <ul class="reserve-perks">
+                        <li><i class="fas fa-clock"></i> Open daily, 11:00 AM – 11:00 PM</li>
+                        <li><i class="fas fa-users"></i> Groups of 1–20 welcome</li>
+                        <li><i class="fas fa-cake-candles"></i> Birthdays & special occasions</li>
+                        <li><i class="fas fa-square-parking"></i> Free valet parking</li>
+                    </ul>
+                    <div class="reserve-contact">
+                        <i class="fas fa-phone"></i> Or call us: <strong>(021) 111-92492</strong>
+                    </div>
+                </div>
+                <form class="reserve-form glass" id="reservationForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="resName">Full Name *</label>
+                            <input type="text" id="resName" required placeholder="Your name">
+                        </div>
+                        <div class="form-group">
+                            <label for="resPhone">Phone *</label>
+                            <input type="tel" id="resPhone" required placeholder="03XX-XXXXXXX">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="resEmail">Email</label>
+                        <input type="email" id="resEmail" placeholder="you@email.com">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="resDate">Date *</label>
+                            <input type="date" id="resDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="resTime">Time *</label>
+                            <input type="time" id="resTime" required value="20:00">
+                        </div>
+                        <div class="form-group">
+                            <label for="resParty">Guests *</label>
+                            <input type="number" id="resParty" required min="1" max="20" value="2">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="resNotes">Special Requests</label>
+                        <textarea id="resNotes" placeholder="Window seat, high chair, allergies..."></textarea>
+                    </div>
+                    <button type="submit" class="btn-primary btn-large" style="width:100%;justify-content:center;">
+                        <i class="fas fa-calendar-check"></i> Request Reservation
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Cart Section -->
+    <section id="cart" class="section">
+        <div class="container">
+            <div class="cart-header">
+                <h2>Your Order Cart</h2>
+                <div class="cart-summary">
+                    <span>Total: </span>
+                    <span class="total-amount" id="cartTotal">Rs. 0</span>
+                </div>
+            </div>
+
+            <div class="cart-items" id="cartItems">
+                <!-- Cart items will be loaded here -->
+            </div>
+
+            <div class="cart-footer">
+                <div class="order-summary">
+                    <div class="summary-row">
+                        <span>Subtotal:</span>
+                        <span id="subtotal">Rs. 0</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Tax (5%):</span>
+                        <span id="taxAmount">Rs. 0</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Delivery Fee:</span>
+                        <span>Rs. 100</span>
+                    </div>
+                    <div class="summary-row total">
+                        <span>Total Amount:</span>
+                        <span id="finalTotal">Rs. 0</span>
+                    </div>
+                </div>
+                <button class="btn-primary btn-large checkout-btn" id="checkoutBtn">
+                    <i class="fas fa-credit-card"></i>
+                    Proceed to Checkout
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Checkout Section -->
+    <section id="checkout" class="section">
+        <div class="container">
+            <div class="checkout-container">
+                <div class="checkout-form">
+                    <h2>Complete Your Order</h2>
+                    
+                    <div class="form-group">
+                        <label for="customerName">Full Name *</label>
+                        <input type="text" id="customerName" required placeholder="Enter your full name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="customerPhone">Phone Number *</label>
+                        <input type="tel" id="customerPhone" required placeholder="03XX-XXXXXXX">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="deliveryAddress">Delivery Address *</label>
+                        <textarea id="deliveryAddress" required placeholder="Enter complete delivery address"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="specialInstructions">Special Instructions</label>
+                        <textarea id="specialInstructions" placeholder="Any special requests or instructions"></textarea>
+                    </div>
+
+                    <div class="payment-method">
+                        <h3>Payment Method</h3>
+                        <div class="payment-option selected">
+                            <i class="fas fa-money-bill-wave"></i>
+                            <span>Cash on Delivery</span>
+                        </div>
+                    </div>
+
+                    <button class="btn-primary btn-large" id="placeOrderBtn">
+                        <i class="fas fa-check"></i>
+                        Place Order
+                    </button>
+                </div>
+
+                <div class="order-review">
+                    <h3>Order Summary</h3>
+                    <div class="review-items" id="reviewItems">
+                        <!-- Order items will be loaded here -->
+                    </div>
+                    <div class="review-total">
+                        <div class="total-row">
+                            <span>Total:</span>
+                            <span id="reviewTotal">Rs. 0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Orders Section -->
+    <section id="orders" class="section">
+        <div class="container">
+            <div class="section-header">
+                <h2>My Orders</h2>
+                <p>Track your orders and leave reviews</p>
+            </div>
+
+            <div class="orders-container" id="ordersContainer">
+                <!-- Orders will be loaded here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Product Review Modal -->
+    <div id="productReviewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Rate Your Food Experience</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="product-review-info">
+                    <img id="reviewProductImage" src="" alt="Product" class="review-product-img">
+                    <div>
+                        <h4 id="reviewProductName"></h4>
+                        <p id="reviewProductCategory"></p>
+                    </div>
+                </div>
+                <div class="rating-section">
+                    <h4>How was your food?</h4>
+                    <div class="star-rating">
+                        <i class="fas fa-star" data-rating="1"></i>
+                        <i class="fas fa-star" data-rating="2"></i>
+                        <i class="fas fa-star" data-rating="3"></i>
+                        <i class="fas fa-star" data-rating="4"></i>
+                        <i class="fas fa-star" data-rating="5"></i>
+                    </div>
+                    <div class="rating-text" id="ratingText">Select your rating</div>
+                </div>
+                <div class="review-section">
+                    <label for="productReviewComment">Your Detailed Review</label>
+                    <textarea id="productReviewComment" placeholder="Share your experience with this dish... How was the taste, quality, and presentation?"></textarea>
+                </div>
+                <button class="btn-primary" id="submitProductReview">Submit Review</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Detail + Premium Reviews Modal -->
+    <div id="productDetailModal" class="modal">
+        <div class="modal-content product-detail-modal">
+            <button class="close-modal detail-close">&times;</button>
+            <div class="detail-hero">
+                <img id="detailImage" src="" alt="" onerror="this.src='images/placeholder-food.svg'">
+                <div class="detail-hero-overlay">
+                    <h2 id="detailName"></h2>
+                    <div id="detailTags" class="menu-item-tags"></div>
+                </div>
+            </div>
+            <div class="detail-body">
+                <div class="detail-top">
+                    <p id="detailDescription" class="detail-desc"></p>
+                    <div class="detail-price" id="detailPrice"></div>
+                </div>
+                <button class="add-to-cart detail-add" id="detailAddBtn"><i class="fas fa-plus"></i> Add to Cart</button>
+
+                <div class="reviews-premium">
+                    <div class="reviews-summary">
+                        <div class="rs-score">
+                            <div class="rs-number" id="rsNumber">0.0</div>
+                            <div class="rs-stars" id="rsStars"></div>
+                            <div class="rs-count" id="rsCount">0 reviews</div>
+                        </div>
+                        <div class="rs-breakdown" id="rsBreakdown"></div>
+                    </div>
+
+                    <div class="reviews-toolbar">
+                        <div class="review-filters" id="reviewFilters">
+                            <button class="rf-pill active" data-filter="all">All</button>
+                            <button class="rf-pill" data-filter="5">5★</button>
+                            <button class="rf-pill" data-filter="4">4★</button>
+                            <button class="rf-pill" data-filter="3">3★</button>
+                            <button class="rf-pill" data-filter="photos"><i class="fas fa-camera"></i> With photos</button>
+                            <button class="rf-pill" data-filter="verified"><i class="fas fa-circle-check"></i> Verified</button>
+                        </div>
+                        <button class="btn-write-review" id="writeReviewBtn"><i class="fas fa-pen"></i> Write a review</button>
+                    </div>
+
+                    <div class="reviews-list" id="reviewsList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div id="authModal" class="modal">
+        <div class="modal-content auth-modal">
+            <div class="modal-header">
+                <h3>Welcome to Zaiqa</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="auth-tabs">
+                    <button class="auth-tab active" data-tab="login">Login</button>
+                    <button class="auth-tab" data-tab="signup">Sign Up</button>
+                </div>
+
+                <form id="loginForm" class="auth-form active">
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="loginEmail" required placeholder="Enter your email">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="loginPassword" required placeholder="Enter your password">
+                    </div>
+                    <button type="submit" class="btn-primary btn-large">Login to Order</button>
+                    <p class="auth-hint"><i class="fas fa-circle-info"></i> Try the demo: <strong>demo@example.com</strong> / <strong>password123</strong></p>
+                </form>
+
+                <form id="signupForm" class="auth-form">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="signupName" required placeholder="Enter your full name">
+                    </div>
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="signupEmail" required placeholder="Enter your email">
+                    </div>
+                    <div class="form-group">
+                        <label>Phone Number</label>
+                        <input type="tel" id="signupPhone" required placeholder="03XX-XXXXXXX">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="signupPassword" required placeholder="Create a password">
+                    </div>
+                    <button type="submit" class="btn-primary btn-large">Create Account</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Zaiqa</h3>
+                    <p>Authentic flavours, delivered. A premium restaurant experience powered by smart technology.</p>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-facebook"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h4>Contact Info</h4>
+                    <p><i class="fas fa-map-marker-alt"></i> 123 Food Street, Karachi</p>
+                    <p><i class="fas fa-phone"></i> (021) 123-4567</p>
+                    <p><i class="fas fa-envelope"></i> hello@zaiqa.com</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Opening Hours</h4>
+                    <p>Monday - Sunday</p>
+                    <p>11:00 AM - 11:00 PM</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Zaiqa Fine Kitchen. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Back to top -->
+    <button class="back-to-top" id="backToTop" aria-label="Back to top">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <script src="script.js"></script>
+</body>
+</html>
