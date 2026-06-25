@@ -1,7 +1,8 @@
 # Docker recipe to run this Express app on Hugging Face Spaces (free, no card).
 # Hugging Face serves apps on port 7860 and requires a non-root user (UID 1000).
 # The official node image already ships a "node" user with UID 1000, so we use it.
-FROM node:20-slim
+# Node 24 — the app uses the built-in node:sqlite module (needs Node 22.5+).
+FROM node:24-slim
 
 # Use the built-in non-root "node" user (UID 1000) with a writable home,
 # so the SQLite database can be created/written at runtime.
