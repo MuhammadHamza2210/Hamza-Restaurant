@@ -1932,7 +1932,8 @@ function updateUI() {
 
     // Admin link + notification bell visibility
     const adminLink = document.getElementById('adminLink');
-    if (adminLink) adminLink.style.display = (currentUser && currentUser.role === 'admin') ? 'flex' : 'none';
+    // Always visible so visitors/reviewers can discover the admin panel (portfolio demo).
+    if (adminLink) adminLink.style.display = 'flex';
     const bellIcon = document.getElementById('bellIcon');
     if (bellIcon) bellIcon.style.display = currentUser ? 'flex' : 'none';
     if (currentUser) { connectRealtime(); } else if (eventSource) { eventSource.close(); }
