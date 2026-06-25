@@ -10,6 +10,9 @@ pinned: false
 
 # Hamza Restaurant — Smart Ordering 🍽️
 
+> 🔴 **Live demo:** **https://muhammadhamza221003-hamza-restaurant.hf.space**
+> (admin panel at `/admin.html` — `admin@zaiqa.com` / `admin123`)
+
 A full-stack restaurant ordering app: a customer storefront and an admin panel,
 backed by a **Node.js + Express** API with **JWT authentication** and a
 **SQLite** database for menus and orders.
