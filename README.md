@@ -1,3 +1,13 @@
+---
+title: Hamza Restaurant
+emoji: 🍽️
+colorFrom: red
+colorTo: orange
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # Hamza Restaurant — Smart Ordering 🍽️
 
 A full-stack restaurant ordering app: a customer storefront and an admin panel,
