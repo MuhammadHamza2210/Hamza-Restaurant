@@ -162,6 +162,13 @@ const PRODUCTS = [
   { id: 22, name: "Mango Lassi", description: "Refreshing yogurt-based drink with sweet mango pulp, cardamom, and rose water.", price: 220, category: "drinks", image: "images/mango-lassi.jpg", is_vegetarian: 1, is_spicy: 0, recommended: 1, base_rating: 4.6 },
   { id: 23, name: "Traditional Chai", description: "Authentic Pakistani tea brewed with milk, cardamom, and special tea leaves.", price: 100, category: "drinks", image: "images/chai.jpg", is_vegetarian: 1, is_spicy: 0, recommended: 0, base_rating: 4.4 },
   { id: 24, name: "Fresh Lemonade", description: "Freshly squeezed lemons with mint, sugar, and a hint of salt. Refreshing and revitalizing.", price: 150, category: "drinks", image: "images/lemonade.webp", is_vegetarian: 1, is_spicy: 0, recommended: 0, base_rating: 4.2 },
+  // --- Vegetarian dishes (so the "Veg only" filter shows real meals, not just drinks) ---
+  { id: 25, name: "Daal Tadka", description: "Slow-cooked yellow lentils tempered with cumin, garlic, and fresh coriander. Comforting, protein-rich, and full of flavour.", price: 450, category: "main-course", image: "images/daal-tadka.jpg", is_vegetarian: 1, is_spicy: 1, recommended: 1, base_rating: 4.6 },
+  { id: 26, name: "Matar Paneer", description: "Soft paneer cubes and green peas simmered in a rich, creamy tomato gravy. A true vegetarian classic.", price: 750, category: "main-course", image: "images/matar-paneer.jpg", is_vegetarian: 1, is_spicy: 1, recommended: 1, base_rating: 4.7 },
+  { id: 27, name: "Rajma Masala", description: "Red kidney beans cooked in a thick onion-tomato masala, best enjoyed with steamed rice.", price: 550, category: "main-course", image: "images/rajma-masala.jpg", is_vegetarian: 1, is_spicy: 1, recommended: 0, base_rating: 4.5 },
+  { id: 28, name: "Baingan Bharta", description: "Smoky fire-roasted eggplant mashed and cooked with onions, tomatoes, and aromatic spices.", price: 500, category: "main-course", image: "images/baingan-bharta.jpg", is_vegetarian: 1, is_spicy: 1, recommended: 0, base_rating: 4.4 },
+  { id: 29, name: "Falafel", description: "Crispy golden chickpea fritters with herbs and sesame, served with a creamy garlic-tahini dip.", price: 400, category: "fast-food", image: "images/falafel.jpg", is_vegetarian: 1, is_spicy: 0, recommended: 1, base_rating: 4.5 },
+  { id: 30, name: "Crispy Chilli Eggplant", description: "Crunchy batter-fried eggplant strips tossed in a sweet-and-spicy chilli garlic sauce.", price: 480, category: "fast-food", image: "images/chilli-eggplant.jpg", is_vegetarian: 1, is_spicy: 1, recommended: 0, base_rating: 4.3 },
 ];
 
 // Deterministic-ish RNG so seeds are stable enough but varied
@@ -335,9 +342,24 @@ function ensureStaffAccounts() {
   }
 }
 
+// Add newer menu items (e.g. the vegetarian dishes) to databases that were already
+// seeded before they existed — inserts by name only if missing, so it never duplicates.
+function ensureExtraProducts() {
+  const insProd = db.prepare(`INSERT INTO products (name, description, price, category, image, is_vegetarian, is_spicy, recommended, available, base_rating)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`);
+  PRODUCTS.filter(p => p.id >= 25).forEach(p => {
+    const exists = db.prepare("SELECT 1 FROM products WHERE name = ?").get(p.name);
+    if (!exists) {
+      insProd.run(p.name, p.description, p.price, p.category, p.image, p.is_vegetarian, p.is_spicy, p.recommended, p.base_rating);
+      console.log(`Added menu item: ${p.name}`);
+    }
+  });
+}
+
 migrate();
 seed();
 ensureStaffAccounts();
+ensureExtraProducts();
 
 // ============================================================
 //  MIDDLEWARE
