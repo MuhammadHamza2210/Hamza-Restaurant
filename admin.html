@@ -18,14 +18,14 @@
             <form id="adminLoginForm">
                 <div class="form-group">
                     <label>Email</label>
-                    <input type="email" id="adminEmail" value="admin@zaiqa.com" required>
+                    <input type="email" id="adminEmail" value="demo.admin@zaiqa.com" required>
                 </div>
                 <div class="form-group">
                     <label>Password</label>
-                    <input type="password" id="adminPassword" value="" placeholder="admin123" required>
+                    <input type="password" id="adminPassword" value="" placeholder="Your password" required>
                 </div>
                 <button type="submit" class="btn btn-primary btn-block">Sign In</button>
-                <p class="login-hint"><i class="fas fa-circle-info"></i> Demo admin: <strong>admin@zaiqa.com</strong> / <strong>admin123</strong></p>
+                <p class="login-hint"><i class="fas fa-circle-info"></i> Read-only demo: <strong>demo.admin@zaiqa.com</strong> / <strong>demo123</strong></p>
                 <p id="adminLoginError" class="login-error"></p>
             </form>
         </div>
@@ -69,6 +69,12 @@
             </header>
 
             <main class="content" id="content">
+                <div id="demoBanner" class="demo-banner" style="display:none;">
+                    <i class="fas fa-eye"></i>
+                    <div>
+                        <strong>Read-only demo</strong> — you can explore the whole console, but creating, editing and status changes are disabled. Sign in with the owner account for full access.
+                    </div>
+                </div>
                 <!-- DASHBOARD -->
                 <section class="view active" id="view-dashboard">
                     <div class="kpi-grid" id="kpiGrid"></div>

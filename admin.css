@@ -295,3 +295,31 @@ select.status-select { padding:.4rem .7rem; border-radius:50px; border:1px solid
     .admin-chip span { display:none; }
     .content { padding:1rem; }
 }
+
+/* ============================================================
+   Read-only demo mode + status lifecycle UI
+   ============================================================ */
+.demo-banner {
+    display:flex; align-items:center; gap:.75rem;
+    background:linear-gradient(90deg, rgba(124,92,255,.14), rgba(58,134,255,.10));
+    border:1px solid rgba(124,92,255,.35);
+    color:var(--text); border-radius:14px;
+    padding:.85rem 1.1rem; margin-bottom:1.25rem; font-size:.9rem; line-height:1.35;
+}
+.demo-banner i { color:#7C5CFF; font-size:1.15rem; }
+.demo-banner strong { color:#7C5CFF; }
+
+/* Hide create buttons for the read-only demo admin */
+.demo-mode #addProductBtn,
+.demo-mode #addCategoryBtn { display:none !important; }
+
+/* Locked / final status selects */
+.status-select:disabled { opacity:.65; cursor:not-allowed; }
+.lock-ic { color:var(--text-soft); margin-left:.35rem; font-size:.8rem; }
+
+/* Upcoming reservation tag */
+.res-upcoming {
+    display:inline-block; margin-left:.4rem; padding:.05rem .45rem;
+    font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.03em;
+    color:#3a86ff; background:rgba(58,134,255,.12); border-radius:999px; vertical-align:middle;
+}

@@ -11,7 +11,18 @@ pinned: false
 # Hamza Restaurant — Smart Ordering 🍽️
 
 > 🔴 **Live demo:** **https://muhammadhamza221003-hamza-restaurant.hf.space**
-> (admin panel at `/admin.html` — `admin@zaiqa.com` / `admin123`)
+> (admin panel at `/admin.html` — **read-only demo admin:** `demo.admin@zaiqa.com` / `demo123`)
+
+## Accounts
+
+| Account | Login | Access |
+| --- | --- | --- |
+| **Owner admin** | `admin@zaiqa.com` / set via `ADMIN_PASSWORD` | Full control — add/edit/delete menu, change order & reservation status |
+| **Demo admin** | `demo.admin@zaiqa.com` / `demo123` | **Read-only** — browse the whole console, but every change is disabled |
+| **Demo customer** | `demo@example.com` / `password123` | Place orders, reserve a table, leave reviews |
+
+The public demo intentionally exposes only the **read-only** admin, so visitors can
+explore the dashboard without being able to alter the live data.
 
 A full-stack restaurant ordering app: a customer storefront and an admin panel,
 backed by a **Node.js + Express** API with **JWT authentication** and a
@@ -31,6 +42,7 @@ npm start        # http://localhost:5000  (admin panel at /admin.html)
 | Variable | Purpose | Default |
 | --- | --- | --- |
 | `JWT_SECRET` | Signs login tokens — set a strong random value in production | dev fallback |
+| `ADMIN_PASSWORD` | Password for the real owner admin (`admin@zaiqa.com`) — set this in production so the live owner account stays private | `admin123` |
 | `PORT` | Port to listen on (set automatically by the host) | `5000` |
 
 The JWT secret is **never hardcoded** — it is read from `process.env.JWT_SECRET`.

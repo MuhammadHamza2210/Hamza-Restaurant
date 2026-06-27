@@ -15,6 +15,9 @@ const { DatabaseSync } = require("node:sqlite");
 const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || "zaiqa-dev-secret-change-me";
+// Real owner-admin password. On the public demo, set this in the environment so the
+// live admin account is private; locally it falls back to "admin123".
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
 const BRAND = "Zaiqa";
 
 // ============================================================
@@ -32,6 +35,7 @@ db.exec(`
     password   TEXT NOT NULL,
     phone      TEXT,
     role       TEXT NOT NULL DEFAULT 'user',
+    is_demo    INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
@@ -201,17 +205,20 @@ function seed() {
   PRODUCTS.forEach(p => insProd.run(p.id, p.name, p.description, p.price, p.category, p.image, p.is_vegetarian, p.is_spicy, p.recommended, p.base_rating));
 
   // --- Users ---
-  const insUser = db.prepare("INSERT INTO users (username, email, password, phone, role, created_at) VALUES (?, ?, ?, ?, ?, ?)");
-  // Admin
-  insUser.run("Restaurant Admin", "admin@zaiqa.com", bcrypt.hashSync("admin123", 10), "0300-0000001", "admin", isoDaysAgo(60));
+  const insUser = db.prepare("INSERT INTO users (username, email, password, phone, role, is_demo, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)");
+  // Real owner admin — full access. Password comes from ADMIN_PASSWORD so the live
+  // GitHub demo never exposes the real one (defaults to admin123 for local dev).
+  insUser.run("Restaurant Admin", "admin@zaiqa.com", bcrypt.hashSync(ADMIN_PASSWORD, 10), "0300-0000001", "admin", 0, isoDaysAgo(60));
+  // Read-only demo admin — browse the whole console but cannot change anything.
+  insUser.run("Demo Admin (read-only)", "demo.admin@zaiqa.com", bcrypt.hashSync("demo123", 10), "0300-0000002", "admin", 1, isoDaysAgo(60));
   // Demo customers
-  const demoId = Number(insUser.run("Demo User", "demo@example.com", bcrypt.hashSync("password123", 10), "0300-1234567", "user", isoDaysAgo(45)).lastInsertRowid);
-  insUser.run("Test Customer", "test@example.com", bcrypt.hashSync("test123", 10), "0312-3456789", "user", isoDaysAgo(30));
+  const demoId = Number(insUser.run("Demo User", "demo@example.com", bcrypt.hashSync("password123", 10), "0300-1234567", "user", 0, isoDaysAgo(45)).lastInsertRowid);
+  insUser.run("Test Customer", "test@example.com", bcrypt.hashSync("test123", 10), "0312-3456789", "user", 0, isoDaysAgo(30));
   // Extra customers spread over time (for customer-growth analytics)
   const extraIds = [];
   for (let i = 0; i < 22; i++) {
     const nm = REVIEW_NAMES[i % REVIEW_NAMES.length];
-    const r = insUser.run(nm, `customer${i}@zaiqa.com`, bcrypt.hashSync("customer123", 10), "0300-00000" + (10 + i), "user", isoDaysAgo(randInt(0, 29)));
+    const r = insUser.run(nm, `customer${i}@zaiqa.com`, bcrypt.hashSync("customer123", 10), "0300-00000" + (10 + i), "user", 0, isoDaysAgo(randInt(0, 29)));
     extraIds.push(Number(r.lastInsertRowid));
   }
   const allCustomerIds = [demoId, ...extraIds];
@@ -267,10 +274,16 @@ function seed() {
   for (let i = 0; i < 8; i++) {
     const uid = pick(allCustomerIds);
     const u = db.prepare("SELECT username, phone, email FROM users WHERE id = ?").get(uid);
+    const daysAhead = randInt(0, 10);
+    // A guest can only be "seated" on the actual day they booked — future bookings
+    // stay pending/confirmed (mirrors the rule the API now enforces).
+    const status = daysAhead === 0
+      ? pick(["confirmed", "seated", "completed"])
+      : pick(["pending", "confirmed", "confirmed"]);
     insRes.run(uid, u.username, u.phone || "0300-1112222", u.email || "guest@zaiqa.com",
-      isoDaysAhead(randInt(0, 10)), pick(times), randInt(2, 8),
+      isoDaysAhead(daysAhead), pick(times), randInt(2, 8),
       rng() < 0.4 ? "Window seat please" : null,
-      pick(["pending", "confirmed", "confirmed", "seated"]), isoDaysAgo(randInt(0, 5)));
+      status, isoDaysAgo(randInt(0, 5)));
   }
 
   console.log("Seed complete: 24 products, demo + admin users, orders, reviews, reservations.");
@@ -287,7 +300,44 @@ function isoDaysAhead(days) {
   const d = new Date(Date.now() + days * 86400000);
   return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
 }
+// Local calendar date "YYYY-MM-DD" — used for "can't seat before the booking day" checks
+// so it lines up with the date the guest picked in their own timezone.
+function todayLocal() {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+// Bring an already-seeded database up to date without wiping it.
+function migrate() {
+  const cols = db.prepare("PRAGMA table_info(users)").all().map(c => c.name);
+  if (!cols.includes("is_demo")) {
+    db.exec("ALTER TABLE users ADD COLUMN is_demo INTEGER NOT NULL DEFAULT 0");
+    console.log("Migration: added users.is_demo column.");
+  }
+}
+
+// Make sure both staff accounts exist and the real admin uses the configured password.
+// Runs every boot so existing databases gain the read-only demo admin too.
+function ensureStaffAccounts() {
+  const real = db.prepare("SELECT id FROM users WHERE email = 'admin@zaiqa.com'").get();
+  if (real) {
+    db.prepare("UPDATE users SET password = ?, is_demo = 0, role = 'admin' WHERE id = ?")
+      .run(bcrypt.hashSync(ADMIN_PASSWORD, 10), real.id);
+  } else {
+    db.prepare("INSERT INTO users (username, email, password, phone, role, is_demo) VALUES (?, ?, ?, ?, 'admin', 0)")
+      .run("Restaurant Admin", "admin@zaiqa.com", bcrypt.hashSync(ADMIN_PASSWORD, 10), "0300-0000001");
+  }
+  const demo = db.prepare("SELECT id FROM users WHERE email = 'demo.admin@zaiqa.com'").get();
+  if (!demo) {
+    db.prepare("INSERT INTO users (username, email, password, phone, role, is_demo) VALUES (?, ?, ?, ?, 'admin', 1)")
+      .run("Demo Admin (read-only)", "demo.admin@zaiqa.com", bcrypt.hashSync("demo123", 10), "0300-0000002");
+    console.log("Created read-only demo admin: demo.admin@zaiqa.com / demo123");
+  }
+}
+
+migrate();
 seed();
+ensureStaffAccounts();
 
 // ============================================================
 //  MIDDLEWARE
@@ -304,6 +354,7 @@ function authenticate(req, res, next) {
     const decoded = jwt.verify(token, JWT_SECRET);
     req.userId = decoded.id;
     req.role = decoded.role;
+    req.isDemo = !!decoded.demo;
     next();
   } catch (e) {
     return res.status(401).json({ msg: "Session expired, please log in again" });
@@ -313,11 +364,17 @@ function requireAdmin(req, res, next) {
   if (req.role !== "admin") return res.status(403).json({ msg: "Admin access required" });
   next();
 }
+// Gate for everything that *changes* data. The read-only demo admin can browse the
+// whole console but is stopped here, so the public showcase can't be edited.
+function blockDemo(req, res, next) {
+  if (req.isDemo) return res.status(403).json({ msg: "This is the read-only demo admin — changes are disabled. Sign in with the owner account to make changes." });
+  next();
+}
 function publicUser(row) {
-  return { id: row.id, username: row.username, email: row.email, phone: row.phone, role: row.role };
+  return { id: row.id, username: row.username, email: row.email, phone: row.phone, role: row.role, isDemo: !!row.is_demo };
 }
 function signToken(user) {
-  return jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
+  return jwt.sign({ id: user.id, role: user.role, demo: !!user.is_demo }, JWT_SECRET, { expiresIn: "7d" });
 }
 
 // ============================================================
@@ -385,7 +442,7 @@ app.post("/api/login", (req, res) => {
 app.get("/api/categories", (req, res) => {
   res.json(db.prepare("SELECT * FROM categories ORDER BY sort_order, label").all());
 });
-app.post("/api/categories", authenticate, requireAdmin, (req, res) => {
+app.post("/api/categories", authenticate, requireAdmin, blockDemo, (req, res) => {
   const { slug, label, icon, sort_order } = req.body;
   if (!slug || !label) return res.status(400).json({ msg: "slug and label required" });
   try {
@@ -394,13 +451,13 @@ app.post("/api/categories", authenticate, requireAdmin, (req, res) => {
     res.json({ msg: "Category added" });
   } catch (e) { res.status(400).json({ msg: "Category slug must be unique" }); }
 });
-app.put("/api/categories/:id", authenticate, requireAdmin, (req, res) => {
+app.put("/api/categories/:id", authenticate, requireAdmin, blockDemo, (req, res) => {
   const { label, icon, sort_order } = req.body;
   db.prepare("UPDATE categories SET label = COALESCE(?, label), icon = COALESCE(?, icon), sort_order = COALESCE(?, sort_order) WHERE id = ?")
     .run(label ?? null, icon ?? null, sort_order ?? null, req.params.id);
   res.json({ msg: "Category updated" });
 });
-app.delete("/api/categories/:id", authenticate, requireAdmin, (req, res) => {
+app.delete("/api/categories/:id", authenticate, requireAdmin, blockDemo, (req, res) => {
   db.prepare("DELETE FROM categories WHERE id = ?").run(req.params.id);
   res.json({ msg: "Category deleted" });
 });
@@ -447,7 +504,7 @@ app.get("/api/admin/products", authenticate, requireAdmin, (req, res) => {
   const rows = db.prepare("SELECT * FROM products ORDER BY id").all();
   res.json(rows.map(p => ({ ...productToMenuItem(p), available: !!p.available })));
 });
-app.post("/api/admin/products", authenticate, requireAdmin, (req, res) => {
+app.post("/api/admin/products", authenticate, requireAdmin, blockDemo, (req, res) => {
   const b = req.body;
   if (!b.name || !b.price || !b.category) return res.status(400).json({ msg: "name, price, category required" });
   const info = db.prepare(`INSERT INTO products (name, description, price, category, image, is_vegetarian, is_spicy, recommended, available, base_rating)
@@ -456,7 +513,7 @@ app.post("/api/admin/products", authenticate, requireAdmin, (req, res) => {
     b.isVegetarian ? 1 : 0, b.isSpicy ? 1 : 0, b.recommended ? 1 : 0, b.available === false ? 0 : 1, Number(b.rating) || 4.5);
   res.json({ msg: "Product added", id: Number(info.lastInsertRowid) });
 });
-app.put("/api/admin/products/:id", authenticate, requireAdmin, (req, res) => {
+app.put("/api/admin/products/:id", authenticate, requireAdmin, blockDemo, (req, res) => {
   const b = req.body;
   const p = db.prepare("SELECT * FROM products WHERE id = ?").get(req.params.id);
   if (!p) return res.status(404).json({ msg: "Product not found" });
@@ -470,13 +527,13 @@ app.put("/api/admin/products/:id", authenticate, requireAdmin, (req, res) => {
     b.rating != null ? Number(b.rating) : p.base_rating, req.params.id);
   res.json({ msg: "Product updated" });
 });
-app.delete("/api/admin/products/:id", authenticate, requireAdmin, (req, res) => {
+app.delete("/api/admin/products/:id", authenticate, requireAdmin, blockDemo, (req, res) => {
   db.prepare("DELETE FROM products WHERE id = ?").run(req.params.id);
   res.json({ msg: "Product deleted" });
 });
 
 // Image upload (base64 -> file in images/uploads)
-app.post("/api/admin/upload", authenticate, requireAdmin, (req, res) => {
+app.post("/api/admin/upload", authenticate, requireAdmin, blockDemo, (req, res) => {
   try {
     const { dataUrl, filename } = req.body;
     const m = /^data:(image\/(\w+));base64,(.+)$/.exec(dataUrl || "");
@@ -516,6 +573,17 @@ app.post("/api/orders", authenticate, (req, res) => {
     res.json({ msg: "Order placed", order: rowToOrder(db.prepare("SELECT * FROM orders WHERE order_number = ?").get(orderNumber)) });
   } catch (e) { console.error(e); res.status(500).json({ msg: "Server error placing order" }); }
 });
+// Customer cancels their OWN order — only while it's still pending (kitchen hasn't
+// started). Once it's preparing/ready/delivered they must call the restaurant.
+app.put("/api/orders/:orderNumber/cancel", authenticate, (req, res) => {
+  const order = db.prepare("SELECT * FROM orders WHERE order_number = ?").get(req.params.orderNumber);
+  if (!order || order.user_id !== req.userId) return res.status(404).json({ msg: "Order not found" });
+  if (order.status !== "pending")
+    return res.status(409).json({ msg: `This order is already ${order.status} and can no longer be cancelled. Please call us for help.` });
+  db.prepare("UPDATE orders SET status = 'cancelled' WHERE order_number = ?").run(req.params.orderNumber);
+  notifyAdmins("order", "Order cancelled by customer", `Order #${order.order_number} was cancelled by ${order.customer_name || "the customer"}.`);
+  res.json({ msg: "Order cancelled" });
+});
 // Admin: all orders
 app.get("/api/admin/orders", authenticate, requireAdmin, (req, res) => {
   const { status } = req.query;
@@ -524,12 +592,30 @@ app.get("/api/admin/orders", authenticate, requireAdmin, (req, res) => {
     : db.prepare("SELECT * FROM orders ORDER BY datetime(created_at) DESC").all();
   res.json(rows.map(rowToOrder));
 });
+// Order lifecycle. You can only move forward through the kitchen flow, or cancel an
+// order that hasn't been delivered yet. "delivered" and "cancelled" are final — a
+// delivered order can't be re-opened or cancelled, which matches real life.
 const ORDER_FLOW = ["pending", "preparing", "ready", "delivered", "cancelled"];
-app.put("/api/admin/orders/:orderNumber/status", authenticate, requireAdmin, (req, res) => {
+const ORDER_TRANSITIONS = {
+  pending:   ["preparing", "cancelled"],
+  preparing: ["ready", "cancelled"],
+  ready:     ["delivered", "cancelled"],
+  delivered: [],
+  cancelled: [],
+};
+app.put("/api/admin/orders/:orderNumber/status", authenticate, requireAdmin, blockDemo, (req, res) => {
   const { status } = req.body;
   if (!ORDER_FLOW.includes(status)) return res.status(400).json({ msg: "Invalid status" });
   const order = db.prepare("SELECT * FROM orders WHERE order_number = ?").get(req.params.orderNumber);
   if (!order) return res.status(404).json({ msg: "Order not found" });
+  if (status === order.status) return res.json({ msg: "No change" });
+  const allowed = ORDER_TRANSITIONS[order.status] || [];
+  if (!allowed.includes(status)) {
+    const finalMsg = ["delivered", "cancelled"].includes(order.status)
+      ? `This order is already ${order.status} and can no longer be changed.`
+      : `Can't move an order from "${order.status}" to "${status}".`;
+    return res.status(409).json({ msg: finalMsg });
+  }
   db.prepare("UPDATE orders SET status = ? WHERE order_number = ?").run(status, req.params.orderNumber);
   if (order.user_id) notifyUser(order.user_id, "order-status", "Order update", `Your order #${order.order_number} is now ${status}.`);
   res.json({ msg: "Status updated" });
@@ -595,6 +681,10 @@ app.post("/api/reservations", (req, res) => {
   try {
     const { name, phone, email, date, time, partySize, notes } = req.body;
     if (!name || !phone || !date || !time || !partySize) return res.status(400).json({ msg: "Please fill in all required fields" });
+    // Can't book a table for a day that's already gone.
+    if (date < todayLocal()) return res.status(400).json({ msg: "Reservation date can't be in the past." });
+    const size = Number(partySize);
+    if (!Number.isInteger(size) || size < 1 || size > 20) return res.status(400).json({ msg: "Party size must be between 1 and 20 guests." });
     let userId = null;
     const header = req.headers["authorization"] || "";
     const token = header.startsWith("Bearer ") ? header.slice(7) : header;
@@ -611,11 +701,33 @@ app.get("/api/reservations/my", authenticate, (req, res) => {
 app.get("/api/admin/reservations", authenticate, requireAdmin, (req, res) => {
   res.json(db.prepare("SELECT * FROM reservations ORDER BY datetime(created_at) DESC").all());
 });
-app.put("/api/admin/reservations/:id/status", authenticate, requireAdmin, (req, res) => {
+// Reservation lifecycle. A booking moves pending → confirmed → seated → completed,
+// and can be cancelled only before the guest is seated. Once a party is seated (or the
+// booking is cancelled/completed) it can't be cancelled — that already happened.
+const RES_STATUSES = ["pending", "confirmed", "seated", "completed", "cancelled"];
+const RES_TRANSITIONS = {
+  pending:   ["confirmed", "seated", "cancelled"],
+  confirmed: ["seated", "cancelled"],
+  seated:    ["completed"],
+  completed: [],
+  cancelled: [],
+};
+app.put("/api/admin/reservations/:id/status", authenticate, requireAdmin, blockDemo, (req, res) => {
   const { status } = req.body;
-  if (!["pending", "confirmed", "seated", "cancelled"].includes(status)) return res.status(400).json({ msg: "Invalid status" });
+  if (!RES_STATUSES.includes(status)) return res.status(400).json({ msg: "Invalid status" });
   const r = db.prepare("SELECT * FROM reservations WHERE id = ?").get(req.params.id);
   if (!r) return res.status(404).json({ msg: "Not found" });
+  if (status === r.status) return res.json({ msg: "No change" });
+  const allowed = RES_TRANSITIONS[r.status] || [];
+  if (!allowed.includes(status)) {
+    const msg = ["seated", "completed", "cancelled"].includes(r.status)
+      ? `This reservation is already ${r.status} and can no longer be changed.`
+      : `Can't move a reservation from "${r.status}" to "${status}".`;
+    return res.status(409).json({ msg });
+  }
+  // You can't seat a party before the day they actually booked.
+  if (status === "seated" && r.date > todayLocal())
+    return res.status(409).json({ msg: `Can't seat this party before their reservation date (${r.date}).` });
   db.prepare("UPDATE reservations SET status = ? WHERE id = ?").run(status, req.params.id);
   if (r.user_id) notifyUser(r.user_id, "reservation", "Reservation update", `Your reservation on ${r.date} is now ${status}.`);
   res.json({ msg: "Reservation updated" });
@@ -724,7 +836,8 @@ app.listen(PORT, () => {
   console.log(`  ${BRAND} server is running!`);
   console.log(`  Customer site:  http://localhost:${PORT}`);
   console.log(`  Admin panel:    http://localhost:${PORT}/admin.html`);
-  console.log(`  Admin login:    admin@zaiqa.com / admin123`);
+  console.log(`  Owner admin:    admin@zaiqa.com / ${process.env.ADMIN_PASSWORD ? "(ADMIN_PASSWORD from env)" : "admin123"}`);
+  console.log(`  Demo admin:     demo.admin@zaiqa.com / demo123  (read-only)`);
   console.log(`  Demo customer:  demo@example.com / password123`);
   console.log("================================================");
 });

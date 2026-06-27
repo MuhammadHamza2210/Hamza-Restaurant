@@ -12,6 +12,34 @@ let menuMap = {};
 let charts = {};
 let evtSource = null;
 let notifications = [];
+let IS_DEMO = false;
+
+// Status lifecycles — kept in sync with the server. The UI only offers moves the
+// backend will actually accept, so staff never hit a confusing error.
+const ORDER_TRANSITIONS = {
+    pending:   ['preparing', 'cancelled'],
+    preparing: ['ready', 'cancelled'],
+    ready:     ['delivered', 'cancelled'],
+    delivered: [],
+    cancelled: [],
+};
+const RES_TRANSITIONS = {
+    pending:   ['confirmed', 'seated', 'cancelled'],
+    confirmed: ['seated', 'cancelled'],
+    seated:    ['completed'],
+    completed: [],
+    cancelled: [],
+};
+function todayStr() {
+    const d = new Date();
+    const p = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+// Belt-and-suspenders: even though demo controls are disabled, stop any stray action.
+function demoBlocked() {
+    if (IS_DEMO) { toast('Read-only demo', 'Sign in with the owner account to make changes.', 'error', 'fa-lock'); return true; }
+    return false;
+}
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -40,9 +68,18 @@ function showApp() {
     $('#loginGate').style.display = 'none';
     $('#adminApp').style.display = 'flex';
     $('#adminName').textContent = adminUser ? adminUser.username : 'Admin';
+    applyDemoMode();
     initRealtime();
     loadNotifications();
     switchView('dashboard');
+}
+// Read-only demo admin: show a banner and hide the create buttons. Per-row controls
+// (status selects, edit/delete) are disabled inside their render functions.
+function applyDemoMode() {
+    IS_DEMO = !!(adminUser && adminUser.isDemo);
+    $('#adminApp').classList.toggle('demo-mode', IS_DEMO);
+    const banner = $('#demoBanner');
+    if (banner) banner.style.display = IS_DEMO ? 'flex' : 'none';
 }
 function showLogin() {
     $('#loginGate').style.display = 'flex';
@@ -212,11 +249,22 @@ $$('#orderFilters .pill').forEach(p => p.addEventListener('click', () => {
     p.classList.add('active'); orderFilter = p.dataset.status; loadOrders();
 }));
 
+// Build a status <select> that only offers valid next states, locks terminal states
+// (shows a padlock), and is fully disabled in read-only demo mode.
+function statusCell(current, allowed, type, id) {
+    const opts = [current, ...allowed];
+    const locked = allowed.length === 0;
+    const disabled = locked || IS_DEMO;
+    const attr = type === 'order' ? 'data-order' : 'data-res';
+    return `<select class="status-select" ${attr}="${id}" ${disabled ? 'disabled' : ''}>
+            ${opts.map(s => `<option value="${s}" ${s === current ? 'selected' : ''}>${s}</option>`).join('')}
+        </select>${locked ? ' <i class="fas fa-lock lock-ic" title="Final — can\'t be changed"></i>' : ''}`;
+}
+
 async function loadOrders() {
     let orders;
     try { orders = await api('/admin/orders' + (orderFilter !== 'all' ? `?status=${orderFilter}` : '')); }
     catch (e) { return toast('Failed to load orders', e.message, 'error'); }
-    const statuses = ['pending', 'preparing', 'ready', 'delivered', 'cancelled'];
     $('#ordersTable').innerHTML = `
         <thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Placed</th><th>Status</th></tr></thead>
         <tbody>${orders.length ? orders.map(o => `
@@ -226,11 +274,7 @@ async function loadOrders() {
                 <td class="muted">${o.items.map(i => `${i.quantity}× ${i.name}`).join(', ')}</td>
                 <td class="cell-strong">${rs(o.total)}</td>
                 <td class="muted">${fmtDate(o.createdAt)}</td>
-                <td>
-                    <select class="status-select" data-order="${o._id}">
-                        ${statuses.map(s => `<option value="${s}" ${s === o.status ? 'selected' : ''}>${s}</option>`).join('')}
-                    </select>
-                </td>
+                <td>${statusCell(o.status, ORDER_TRANSITIONS[o.status] || [], 'order', o._id)}</td>
             </tr>`).join('') : `<tr><td colspan="6"><div class="empty"><i class="fas fa-receipt"></i><p>No orders found</p></div></td></tr>`}
         </tbody>`;
     $$('#ordersTable .status-select').forEach(sel => sel.addEventListener('change', async () => {
@@ -264,8 +308,8 @@ function renderProducts() {
                 <div class="pcat">${p.category}</div>
                 <div class="pprice">${rs(p.price)}</div>
                 <div class="pactions">
-                    <button class="edit" data-id="${p._id}"><i class="fas fa-pen"></i> Edit</button>
-                    <button class="del" data-id="${p._id}"><i class="fas fa-trash"></i></button>
+                    <button class="edit" data-id="${p._id}" ${IS_DEMO ? 'disabled' : ''}><i class="fas fa-pen"></i> Edit</button>
+                    <button class="del" data-id="${p._id}" ${IS_DEMO ? 'disabled' : ''}><i class="fas fa-trash"></i></button>
                 </div>
             </div>
         </div>`).join('') || `<div class="empty"><i class="fas fa-burger"></i><p>No products</p></div>`;
@@ -310,6 +354,7 @@ $('#pImageFile').addEventListener('change', async (e) => {
     reader.readAsDataURL(file);
 });
 $('#saveProductBtn').addEventListener('click', async () => {
+    if (demoBlocked()) return;
     const body = {
         name: $('#pName').value.trim(), price: $('#pPrice').value, description: $('#pDesc').value.trim(),
         category: $('#pCategory').value, rating: $('#pRating').value, image: $('#pImage').value.trim() || 'images/placeholder-food.svg',
@@ -343,7 +388,7 @@ async function loadCategories() {
                 <td class="cell-strong">${c.label}</td>
                 <td class="muted">${c.slug}</td>
                 <td>${c.sort_order}</td>
-                <td><button class="btn btn-ghost del-cat" data-id="${c.id}" style="padding:.4rem .8rem"><i class="fas fa-trash"></i></button></td>
+                <td><button class="btn btn-ghost del-cat" data-id="${c.id}" ${IS_DEMO ? 'disabled' : ''} style="padding:.4rem .8rem"><i class="fas fa-trash"></i></button></td>
             </tr>`).join('')}</tbody>`;
     $$('#categoriesTable .del-cat').forEach(b => b.addEventListener('click', async () => {
         if (!confirm('Delete category?')) return;
@@ -353,6 +398,7 @@ async function loadCategories() {
 }
 $('#addCategoryBtn').addEventListener('click', () => { ['cLabel','cSlug','cIcon'].forEach(i=>$('#'+i).value=''); $('#cSort').value=0; $('#categoryModal').classList.add('open'); });
 $('#saveCategoryBtn').addEventListener('click', async () => {
+    if (demoBlocked()) return;
     const body = { label: $('#cLabel').value.trim(), slug: $('#cSlug').value.trim().toLowerCase().replace(/\s+/g,'-'), icon: $('#cIcon').value.trim() || 'fa-utensils', sort_order: Number($('#cSort').value) || 0 };
     if (!body.label || !body.slug) return toast('Label and slug required', '', 'error');
     try { await api('/categories', { method: 'POST', body }); $('#categoryModal').classList.remove('open'); toast('Category added'); loadCategories(); }
@@ -364,19 +410,24 @@ $('#saveCategoryBtn').addEventListener('click', async () => {
 // ============================================================
 async function loadReservations() {
     let list; try { list = await api('/admin/reservations'); } catch (e) { return toast('Failed', e.message, 'error'); }
-    const statuses = ['pending', 'confirmed', 'seated', 'cancelled'];
+    const today = todayStr();
     $('#reservationsTable').innerHTML = `
         <thead><tr><th>Guest</th><th>Phone</th><th>Date</th><th>Time</th><th>Party</th><th>Notes</th><th>Status</th></tr></thead>
-        <tbody>${list.length ? list.map(r => `
+        <tbody>${list.length ? list.map(r => {
+            // A guest can only be seated on/after their booking day — hide "seated" for future bookings.
+            let allowed = RES_TRANSITIONS[r.status] || [];
+            if (r.date > today) allowed = allowed.filter(s => s !== 'seated');
+            const future = r.date > today;
+            return `
             <tr>
                 <td class="cell-strong">${r.name}</td>
                 <td class="muted">${r.phone}</td>
-                <td>${r.date}</td>
+                <td>${r.date}${future ? ' <span class="res-upcoming" title="Upcoming booking">upcoming</span>' : ''}</td>
                 <td>${r.time}</td>
                 <td><i class="fas fa-user-group muted"></i> ${r.party_size}</td>
                 <td class="muted">${r.notes || '—'}</td>
-                <td><select class="status-select" data-res="${r.id}">${statuses.map(s => `<option ${s===r.status?'selected':''}>${s}</option>`).join('')}</select></td>
-            </tr>`).join('') : `<tr><td colspan="7"><div class="empty"><i class="fas fa-calendar-check"></i><p>No reservations</p></div></td></tr>`}</tbody>`;
+                <td>${statusCell(r.status, allowed, 'res', r.id)}</td>
+            </tr>`; }).join('') : `<tr><td colspan="7"><div class="empty"><i class="fas fa-calendar-check"></i><p>No reservations</p></div></td></tr>`}</tbody>`;
     $$('#reservationsTable .status-select').forEach(sel => sel.addEventListener('change', async () => {
         try { await api(`/admin/reservations/${sel.dataset.res}/status`, { method: 'PUT', body: { status: sel.value } }); toast('Reservation updated'); loadReservations(); }
         catch (e) { toast('Failed', e.message, 'error'); }

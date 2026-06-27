@@ -1202,7 +1202,7 @@ body::after {
     margin-top: 0.75rem;
 }
 
-.review-btn, .reorder-btn {
+.review-btn, .reorder-btn, .cancel-order-btn {
     background: var(--secondary);
     color: white;
     border: none;
@@ -1217,6 +1217,8 @@ body::after {
 .review-btn:hover { background: #1FA396; transform: translateY(-1px); }
 .reorder-btn { background: var(--primary); }
 .reorder-btn:hover { background: var(--primary-dark); transform: translateY(-1px); }
+.cancel-order-btn { background: transparent; color: #e23d5b; border: 1.5px solid #e23d5b; }
+.cancel-order-btn:hover { background: #e23d5b; color: #fff; transform: translateY(-1px); }
 
 /* ===================== Modal ===================== */
 .modal {

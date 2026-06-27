@@ -22,11 +22,12 @@ node server.js
 
 ## 🔑 Logins
 
-| Role     | Email             | Password    |
-|----------|-------------------|-------------|
-| **Admin**| admin@zaiqa.com   | admin123    |
-| Customer | demo@example.com  | password123 |
-| Customer | test@example.com  | test123     |
+| Role     | Email                  | Password                         |
+|----------|------------------------|----------------------------------|
+| **Owner admin** | admin@zaiqa.com | `ADMIN_PASSWORD` env (local default `admin123`) |
+| **Demo admin (read-only)** | demo.admin@zaiqa.com | demo123 |
+| Customer | demo@example.com       | password123                      |
+| Customer | test@example.com       | test123                          |
 
 Customers can also sign up. When logged in as the admin, an **Admin** link appears
 in the customer site's navbar.

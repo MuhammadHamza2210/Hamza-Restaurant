@@ -1548,6 +1548,10 @@ function loadUserOrders() {
                         <button class="reorder-btn" onclick="reorder('${order._id}')">
                             <i class="fas fa-rotate-right"></i> Reorder
                         </button>
+                        ${order.status === 'pending' ? `
+                            <button class="cancel-order-btn" onclick="cancelMyOrder('${order._id}')">
+                                <i class="fas fa-xmark"></i> Cancel order
+                            </button>` : ''}
                         ${order.status === 'delivered' ? order.items.map(item => `
                             <button class="review-btn" onclick="showProductReviewModal('${item._id}')">
                                 <i class="fas fa-star"></i> Review ${item.name}
@@ -1607,6 +1611,22 @@ function reorder(orderId) {
     showNotification('Items added to your cart!', 'success');
     showSection('cart');
     updateActiveNav(document.querySelector('.nav-link[href="#cart"]'));
+}
+
+// Cancel your own order — only allowed while it's still pending (kitchen hasn't started).
+async function cancelMyOrder(orderId) {
+    if (!currentUser) { showAuthModal(); return; }
+    if (!confirm('Cancel this order? This cannot be undone.')) return;
+    try {
+        await api(`/orders/${orderId}/cancel`, { method: 'PUT', auth: true });
+        showNotification('Your order has been cancelled.', 'success');
+        await syncUserData();
+        loadUserOrders();
+    } catch (err) {
+        showNotification(err.message || 'Could not cancel this order', 'error');
+        await syncUserData();
+        loadUserOrders();
+    }
 }
 
 // Product Review System
